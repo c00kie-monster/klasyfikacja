@@ -590,7 +590,7 @@ public class PR_GUI extends javax.swing.JFrame {
             l_FLD_winner.setText(max_ind+"");
             l_FLD_val.setText(FLD+"");
         } else {
-        		this.computeFisherND();
+        		this.selection(d);
         }
         // to do: compute for higher dimensional spaces, use e.g. SFS for candidate selection
     }
@@ -713,68 +713,80 @@ public class PR_GUI extends javax.swing.JFrame {
     }
     
     /*
-     * Liczy wspolczynnik Fishera dla n wymiarow.  Do zrobinenia!
+     * Liczy dlugosc wektora
      */
-    private double computeFisherND() {
-    	double[] averages;
-    	double[][] featuresMatrix;
-    	Matrix[] classSpreads = new Matrix[ClassNames.length]; 
-    			
-//    	for (int i = 0; i < ClassNames.length; i++) {
-//    		averages = extractAveragesForOneClass(computeAveragesForAllFeatures(), i);
-//    		featuresMatrix = extractFeaturesMatrixForOneClass(F, i);
-//    		classSpreads[i] = computeClassSpread(featuresMatrix, averages);
-//    		System.out.println(classSpreads[i].getRowDimension() + " | col: " + classSpreads[i].getColumnDimension() );
-//    	}
-    	
-    	averages = extractAveragesForOneClass(computeAveragesForAllFeatures(), 0);
-    	featuresMatrix = extractFeaturesMatrixForOneClass(F, 0);
-    	
-    	double[][] triple = new double[3][];
-    	triple[0] = featuresMatrix[0];
-    	triple[1] = featuresMatrix[1];
-    	triple[2] = featuresMatrix[2];
-    	
-    	double[] avg = new double[3];
-    	avg[0] = averages[0];
-    	avg[1] = averages[1];
-    	avg[2] = averages[2];
-    	
-    	
-    	classSpreads[0] = computeClassSpread(triple, avg);
-    	System.out.println(classSpreads[0].getRowDimension() + " | col: " + classSpreads[0].getColumnDimension() );
-    	System.out.println(Arrays.deepToString(classSpreads[0].getArray()));
-    	return 0.0;
+    private double computeVectorLength(double[] v) {
+    	double sum = 0.0;
+    	for (int i = 0; i < v.length; i++)
+    		sum += v[i] * v[i];
+    	return Math.sqrt(sum);
     }
     
-    private void selection(int preferedNumberOfFeatures) {
+    /*
+     * Odejmuje wektory
+     */
+    private double[] subtractVectors(double[] a, double[] b) {
+    	double[] result = new double[a.length];
+    	
+    	for (int i = 0; i < a.length; i++) {
+    		result[i] = a[i] - b[i];
+    	}
+    	return result;
+    }
+    
+    /*
+     * Liczy wspolczynnik Fishera dla n wymiarow.  
+     */
+    private double computeFisherND(double[] mA, double[] mB, double[][] a, double[][] b) {
+    	Matrix classSpreadA = computeClassSpread(a, mA);
+    	Matrix classSpreadB = computeClassSpread(b, mB);
+    	double[] differenceVector = subtractVectors(mA, mB);
+    	double vectorLength = computeVectorLength(differenceVector);
+    	
+    	return vectorLength / (classSpreadA.det() + classSpreadB.det());
+    }
+    
+    private void selection(int numberOfFeatures) {
     	double[] averagesA = extractAveragesForOneClass(computeAveragesForAllFeatures(), 0);
     	double[] averagesB = extractAveragesForOneClass(computeAveragesForAllFeatures(), 1);
+    	double[] selectedAveragesA = new double[numberOfFeatures];
+    	double[] selectedAveragesB = new double[numberOfFeatures];
+    	
     	double[][] featuresA = extractFeaturesMatrixForOneClass(F, 0);
     	double[][] featuresB = extractFeaturesMatrixForOneClass(F, 1);
+    	double[][] selectedFeaturesA = new double[numberOfFeatures][];
+    	double[][] selectedFeaturesB = new double[numberOfFeatures][];
     	
-    	int level = preferedNumberOfFeatures;
-		int[] tmp = new int[d];
-		
-		for (int i = 0; i < level; i++) {
-			
-		}
-			
-		
-		while (level >= 0) {
-			System.out.println(Arrays.toString(tmp));
-			if (tmp[d - 1] == n)
-				level--;
-			else
-				level = d - 1;
-			
-			if (level >= 0)
-				for (int i = d - 1; i >= level; i--)
-					tmp[i] = tmp[level] + i - level + 1;
-		}
-	}
+    	List<int[]> combinations = Combinations.combinationsWithoutRepetitions(averagesA.length - 1, numberOfFeatures);
+    	int[] theBestFeatures = new int[numberOfFeatures];
     	
-    }
+    	int index = 0;
+    	int przebieg = 0;
+    	double maxFisherFactor = 0.0;
+    	double currentFisherFactor = 0.0;
+    	
+    	for (int[] c : combinations) {
+    		System.out.println(przebieg++);
+    		for (int i = 0; i < c.length; i++) {
+    			selectedFeaturesA[i] = featuresA[c[i]];
+    			selectedFeaturesB[i] = featuresB[c[i]];
+    			selectedAveragesA[index] =  averagesA[c[i]];
+    			selectedAveragesB[index] =  averagesB[c[i]];
+    			index += 1;
+    		}
+    		
+    		currentFisherFactor = computeFisherND(selectedAveragesA, selectedAveragesB, selectedFeaturesA, selectedFeaturesB);
+    		
+    		if (maxFisherFactor < currentFisherFactor) {
+    			maxFisherFactor = currentFisherFactor;
+    			theBestFeatures = c;
+    		}
+
+    		index = 0;	
+    	}
+		System.out.println(maxFisherFactor);
+		System.out.println(Arrays.toString(theBestFeatures));
+   }
     
     private Matrix extractFeatures(Matrix C, double Ek, int k) {               
         
