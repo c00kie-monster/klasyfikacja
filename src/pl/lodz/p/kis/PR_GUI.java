@@ -735,7 +735,7 @@ public class PR_GUI extends javax.swing.JFrame {
     }
     
     /*
-     * Liczy wspolczynnik Fishera dla n wymiarow.  
+     * Liczy wspolczynnik Fishera dla n cech.  
      */
     private double computeFisherND(double[] mA, double[] mB, double[][] a, double[][] b) {
     	Matrix classSpreadA = computeClassSpread(a, mA);
@@ -761,12 +761,10 @@ public class PR_GUI extends javax.swing.JFrame {
     	int[] theBestFeatures = new int[numberOfFeatures];
     	
     	int index = 0;
-    	int przebieg = 0;
     	double maxFisherFactor = 0.0;
     	double currentFisherFactor = 0.0;
     	
     	for (int[] c : combinations) {
-    		System.out.println(przebieg++);
     		for (int i = 0; i < c.length; i++) {
     			selectedFeaturesA[i] = featuresA[c[i]];
     			selectedFeaturesB[i] = featuresB[c[i]];
@@ -784,8 +782,9 @@ public class PR_GUI extends javax.swing.JFrame {
 
     		index = 0;	
     	}
+    	System.out.println(Arrays.toString(theBestFeatures));
 		System.out.println(maxFisherFactor);
-		System.out.println(Arrays.toString(theBestFeatures));
+		
    }
     
     private Matrix extractFeatures(Matrix C, double Ek, int k) {               
