@@ -3,10 +3,12 @@ package pl.lodz.p.kis;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -591,6 +593,7 @@ public class PR_GUI extends javax.swing.JFrame {
             l_FLD_val.setText(FLD+"");
         } else {
         		this.selection(d);
+        		this.computeSfs(d);
         }
         // to do: compute for higher dimensional spaces, use e.g. SFS for candidate selection
     }
@@ -746,7 +749,68 @@ public class PR_GUI extends javax.swing.JFrame {
     	return vectorLength / (classSpreadA.det() + classSpreadB.det());
     }
     
+    private void computeSfs(int numberOfFeatures) {
+    	double methodStartTime = System.currentTimeMillis();
+    	System.out.println("SFS: start " + methodStartTime + "\n");
+    
+    	double[] averagesA = extractAveragesForOneClass(computeAveragesForAllFeatures(), 0);
+    	double[] averagesB = extractAveragesForOneClass(computeAveragesForAllFeatures(), 1);
+      	
+    	double[][] featuresA = extractFeaturesMatrixForOneClass(F, 0);
+    	double[][] featuresB = extractFeaturesMatrixForOneClass(F, 1);
+     	
+    	Set<Integer> allFeaturesIndices = new HashSet<>();
+    	for (int i = 0; i < averagesA.length - 1; i++)
+    		allFeaturesIndices.add(i);
+    	
+    	double maxFisherFactor = 0.0;
+    	double currentFisherFactor = 0.0;
+    	int[] currentIndices = {};
+    	
+    	List<int[]> generatedIndices = ForwardSelector.generate(currentIndices, allFeaturesIndices);
+    	
+    	for (int i = 1; i <= numberOfFeatures; i++) {
+    		double[] selectedAveragesA = new double[i];
+        	double[] selectedAveragesB = new double[i];
+        	double[][] selectedFeaturesA = new double[i][];
+			double[][] selectedFeaturesB = new double[i][];
+			
+			
+        	for (int[] indices : generatedIndices) {
+    			for (int j = 0; j < indices.length; j++) {
+        			selectedFeaturesA[j] = featuresA[indices[j]];
+        			selectedFeaturesB[j] = featuresB[indices[j]];
+        			selectedAveragesA[j] =  averagesA[indices[j]];
+        			selectedAveragesB[j] =  averagesB[indices[j]];
+       			}
+    			
+    			currentFisherFactor = computeFisherND(selectedAveragesA, selectedAveragesB, selectedFeaturesA, selectedFeaturesB);
+    			
+    			if (maxFisherFactor < currentFisherFactor) {
+        			maxFisherFactor = currentFisherFactor;
+        			currentIndices = indices;
+        		}
+    		}
+        	
+        	for (int index : currentIndices)
+        		allFeaturesIndices.remove(index);
+        	
+        	generatedIndices = ForwardSelector.generate(currentIndices, allFeaturesIndices);
+    	}
+    	
+    	System.out.println(Arrays.toString(currentIndices));
+		System.out.println(maxFisherFactor);
+		double methodStopTime = System.currentTimeMillis();
+		System.out.println("SFS: stop " + methodStopTime);
+		System.out.println("SFS: duration " + (methodStopTime - methodStartTime) + " miliseconds \n");
+    }
+    
+    
+    
     private void selection(int numberOfFeatures) {
+    	double methodStartTime = System.currentTimeMillis();
+    	System.out.println("Classic: start " + methodStartTime + "\n");
+    	
     	double[] averagesA = extractAveragesForOneClass(computeAveragesForAllFeatures(), 0);
     	double[] averagesB = extractAveragesForOneClass(computeAveragesForAllFeatures(), 1);
     	double[] selectedAveragesA = new double[numberOfFeatures];
@@ -784,6 +848,9 @@ public class PR_GUI extends javax.swing.JFrame {
     	}
     	System.out.println(Arrays.toString(theBestFeatures));
 		System.out.println(maxFisherFactor);
+		double methodStopTime = System.currentTimeMillis();
+		System.out.println("\nClassic: stop " + methodStopTime);
+		System.out.println("Classic: duration " + (methodStopTime - methodStartTime) + " miliseconds \n");
 		
    }
     
