@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -434,7 +435,7 @@ public class PR_GUI extends javax.swing.JFrame {
 //    	Matrix unclassifiedObjects = splitResult.get(1);
 //    	System.out.println(classifiedObjects.getRowDimension());
     	
-    	Classifier classifier = new NNClassifier();
+    	Classifier classifier = new KNNClassifier();
     	classifier.execute();
     	
     }//GEN-LAST:event_b_TrainActionPerformed
@@ -1005,7 +1006,9 @@ public class PR_GUI extends javax.swing.JFrame {
 					allObjects.add(new FileObject(extractObject(featuresB, i
 							- featuresA[0].length), FileObject.CLASS_B, i));
 			}
-
+			
+			Collections.shuffle(allObjects);
+			
 			try {
 				for (int i = 0; i < numberOfAllObjects; i++) {
 					if (i % ratio == 0) {
@@ -1015,6 +1018,7 @@ public class PR_GUI extends javax.swing.JFrame {
 						unclassifiedObjectsCopy.add(allObjects.get(i));
 					} else
 						classifiedObjects.add(allObjects.get(i));
+					
 				}
 			} catch (CloneNotSupportedException e) {
 				e.printStackTrace();
